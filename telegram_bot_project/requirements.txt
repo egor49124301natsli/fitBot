@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 aiogram==2.25.1
 aiohttp==3.9.1
 schedule==1.2.0
