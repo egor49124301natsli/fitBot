@@ -3,6 +3,9 @@ import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils.executor import start_polling
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
+from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.dispatcher import FSMContext
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from googletrans import Translator
 import os
 from dotenv import load_dotenv
@@ -10,25 +13,27 @@ from dotenv import load_dotenv
 load_dotenv()
 
 API_TOKEN = os.getenv("BOT_TOKEN")
-
-CHANNELS = {
-    "ru": int(os.getenv("CHANNEL_RU")),
-    "ua": int(os.getenv("CHANNEL_UA")),
-    "en": int(os.getenv("CHANNEL_EN")),
-    "pl": int(os.getenv("CHANNEL_PL")),
+LANGUAGE_CHANNELS = {
+    "ru": -1001111111111,
+    "ua": -1002222222222,
+    "en": -1003333333333,
+    "pl": -1004444444444
 }
-
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
 bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 dp.middleware.setup(LoggingMiddleware())
 
 translator = Translator()
 
+class PostStates(StatesGroup):
+    waiting_for_post_text = State()
+
 async def send_post_to_channels(text: str):
     translations = {}
-    for lang in CHANNELS.keys():
+    for lang in LANGUAGE_CHANNELS.keys():
         if lang == "ru":
             translations[lang] = text
         else:
@@ -39,7 +44,7 @@ async def send_post_to_channels(text: str):
                 logging.error(f"Error translating to {lang}: {e}")
                 translations[lang] = text
 
-    for lang, channel_id in CHANNELS.items():
+    for lang, channel_id in LANGUAGE_CHANNELS.items():
         try:
             await bot.send_message(channel_id, translations[lang])
         except Exception as e:
@@ -58,17 +63,18 @@ async def cmd_post(message: types.Message):
         await message.answer("У вас нет прав отправлять посты.")
         return
     await message.answer("Отправьте текст поста для рассылки:")
+    await PostStates.waiting_for_post_text.set()
 
-    @dp.message_handler(lambda m: m.from_user.id == ADMIN_ID)
-    async def handle_post_text(post_message: types.Message):
-        text = post_message.text
-        await send_post_to_channels(text)
-        await post_message.answer("Пост отправлен в каналы.")
-        dp.message_handlers.unregister(handle_post_text)
+@dp.message_handler(state=PostStates.waiting_for_post_text, content_types=types.ContentTypes.TEXT)
+async def handle_post_text(message: types.Message, state: FSMContext):
+    text = message.text
+    await send_post_to_channels(text)
+    await message.answer("Пост отправлен в каналы.")
+    await state.finish()
 
 async def periodic_api_check():
     while True:
-        # Тут можно запросить API и отправить новые посты
+        # Тут можно запросить API и отправить новые посты, если нужно
         await asyncio.sleep(3600)
 
 async def on_startup(_):
