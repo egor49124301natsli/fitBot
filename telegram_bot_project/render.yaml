@@ -4,13 +4,13 @@ services:
     env: python
     plan: free
     buildCommand: |
-      apt-get update && apt-get install -y build-essential libssl-dev libffi-dev python3-dev
+      apt-get update && apt-get install -y gcc libssl-dev libffi-dev python3-dev
       pip install --upgrade pip setuptools wheel
       pip install -r requirements.txt
     startCommand: python main.py
     envVars:
       - key: BOT_TOKEN
-        value: "твой_токен_бота"
+        value: "7555260389:AAGdTL31nT_JRkgCFYINr4c0coFiioY9Vwo"
       - key: ADMIN_ID
         value: "5369169032"
       - key: CHANNEL_RU
