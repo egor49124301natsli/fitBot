@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: fitbot
+    env: python
+    plan: free
+    buildCommand: |
+      pip install --upgrade pip setuptools wheel
+      pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: BOT_TOKEN
+        value: "твой_токен_бота"
+      - key: ADMIN_ID
+        value: "5369169032"
+      - key: CHANNEL_RU
+        value: "-1001234567890"
+      - key: CHANNEL_UA
+        value: "-1001234567891"
+      - key: CHANNEL_EN
+        value: "-1001234567892"
+      - key: CHANNEL_PL
+        value: "-1001234567893"
